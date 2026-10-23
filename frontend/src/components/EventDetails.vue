@@ -49,6 +49,8 @@ function onClick(e: MouseEvent) {
 <style scoped>
 .details {
   width: min(420px, calc(100vw - 32px));
+  /* The browser centers a modal dialog with margin: auto, which base.css resets to 0. */
+  margin: auto;
   padding: 0;
   color: var(--color-text-primary);
   background-color: var(--color-surface);
