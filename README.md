@@ -57,6 +57,7 @@ Clicking an event shows its details. View and day are in the URL
 | `POST /api/account/sync` | Refresh now (cooldown 30 s). Returns the account; a failure is in `syncError`. |
 | `DELETE /api/account` | Deletes the stored password and every synced calendar and event. |
 | `GET /api/events?from=2026-10-19&to=2026-10-26` | Events overlapping those days (`to` excluded, at most 100 days), all-day first, then by start. |
+| `GET /api/events/today` | The same for today in Berlin, plus `date` (`"2026-10-23"`). The API for other apps: Portal's Calendar tile. |
 
 ```json
 {
@@ -75,8 +76,13 @@ Clicking an event shows its details. View and day are in the URL
 
 All-day `end` is the day after the last one. `syncing: true` means a sync is
 running (maybe just started by this request); ask again shortly. Errors are
-RFC 9457 problem details. Not shared cross-origin yet; for a Portal tile, add
-CORS for one path as Fitness does.
+RFC 9457 problem details.
+
+`/api/events/today` (only that path) is readable cross-origin, with the
+caller's Keycloak access token (any Teaz app's token works, same realm; no
+role needed), from the origins in `calendar.cors.allowed-origins`
+(`application-prod.properties`, currently `https://portal.teaz.pro`). Fields
+are only ever added to it, never renamed or removed.
 
 ## Running locally
 

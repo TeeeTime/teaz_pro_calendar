@@ -175,6 +175,29 @@ class CalendarFlowTests {
 	}
 
 	@Test
+	void todayIsTheDayInBerlin() throws Exception {
+		JsonNode empty = read("/api/events/today", "a");
+		assertThat(empty.path("connected").asBoolean()).isFalse();
+		assertThat(empty.path("date").asString()).isEqualTo("2026-10-21");
+
+		connect("a", icloud.password()).andExpect(status().isOk());
+		// The 21st's standup was cancelled (EXDATE): nothing today.
+		assertThat(titles(read("/api/events/today", "a"))).isEmpty();
+
+		// 00:30 on the 20th in Berlin is still the 19th in UTC.
+		clock.set(LocalDateTime.of(2026, 10, 20, 0, 30));
+		JsonNode today = read("/api/events/today", "a");
+		assertThat(today.path("date").asString()).isEqualTo("2026-10-20");
+		assertThat(today.path("calendars").get(0).path("color").asString()).isEqualTo("#1badf8");
+		assertThat(titles(today)).containsExactly("Dentist", "Customer call", "Standup");
+
+		clock.set(LocalDateTime.of(2026, 10, 24, 12, 0));
+		JsonNode saturday = read("/api/events/today", "a");
+		assertThat(titles(saturday)).containsExactly("Weekend trip");
+		assertThat(saturday.path("events").get(0).path("allDay").asBoolean()).isTrue();
+	}
+
+	@Test
 	void thePasswordIsStoredEncrypted() throws Exception {
 		connect("a", icloud.password()).andExpect(status().isOk());
 		String stored = jdbc.sql("SELECT password FROM calendar_account").query(String.class).single();

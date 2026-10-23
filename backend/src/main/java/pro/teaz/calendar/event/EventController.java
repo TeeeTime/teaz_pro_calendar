@@ -1,5 +1,6 @@
 package pro.teaz.calendar.event;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -27,6 +28,7 @@ import pro.teaz.calendar.sync.CalendarSync;
 /**
  * The logged-in user's events in a range of days, from the synced copy. A
  * stale copy is refreshed in the background, the answer doesn't wait for it.
+ * {@code /api/events/today} is the API for other apps (the Portal tile); see README.
  */
 @RestController
 @RequestMapping("/api/events")
@@ -53,21 +55,28 @@ class EventController {
 			List<Event> events) {
 	}
 
+	/** @param date today in calendar.timezone; otherwise like {@link EventList} */
+	record Today(boolean connected, LocalDate date, OffsetDateTime syncedAt, boolean syncing, List<Calendar> calendars,
+			List<Event> events) {
+	}
+
 	private final Events events;
 	private final CalendarStore store;
 	private final Accounts accounts;
 	private final CalendarSync sync;
 	private final CurrentUser currentUser;
 	private final CalendarProperties properties;
+	private final Clock clock;
 
 	EventController(Events events, CalendarStore store, Accounts accounts, CalendarSync sync, CurrentUser currentUser,
-			CalendarProperties properties) {
+			CalendarProperties properties, Clock clock) {
 		this.events = events;
 		this.store = store;
 		this.accounts = accounts;
 		this.sync = sync;
 		this.currentUser = currentUser;
 		this.properties = properties;
+		this.clock = clock;
 	}
 
 	/** Events overlapping the days {@code from} up to (excluding) {@code to}. */
@@ -78,7 +87,18 @@ class EventController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 					"\"to\" must be after \"from\", at most " + MAX_DAYS + " days.");
 		}
-		String user = currentUser.id();
+		return list(currentUser.id(), from, to);
+	}
+
+	/** Today's events, "today" in the backend's time zone. */
+	@GetMapping("/today")
+	Today today() {
+		LocalDate today = LocalDate.now(clock.withZone(properties.timezone()));
+		EventList list = list(currentUser.id(), today, today.plusDays(1));
+		return new Today(list.connected(), today, list.syncedAt(), list.syncing(), list.calendars(), list.events());
+	}
+
+	private EventList list(String user, LocalDate from, LocalDate to) {
 		Optional<Account> account = accounts.find(user);
 		if (account.isEmpty()) return new EventList(false, null, false, List.of(), List.of());
 

@@ -25,6 +25,7 @@ class SecurityConfigTests {
 	void rejectsRequestWithoutToken() throws Exception {
 		mvc.perform(get("/api/account")).andExpect(status().isUnauthorized());
 		mvc.perform(get("/api/events?from=2026-10-19&to=2026-10-26")).andExpect(status().isUnauthorized());
+		mvc.perform(get("/api/events/today")).andExpect(status().isUnauthorized());
 	}
 
 	@Test
@@ -34,9 +35,24 @@ class SecurityConfigTests {
 	}
 
 	@Test
-	void nothingIsSharedCrossOrigin() throws Exception {
+	void onlyTheTileEndpointIsSharedCrossOrigin() throws Exception {
+		mvc.perform(options("/api/events/today")
+				.header("Origin", "https://portal.teaz.pro")
+				.header("Access-Control-Request-Method", "GET")
+				.header("Access-Control-Request-Headers", "Authorization"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Access-Control-Allow-Origin", "https://portal.teaz.pro"));
+
 		mvc.perform(options("/api/events")
 				.header("Origin", "https://portal.teaz.pro")
+				.header("Access-Control-Request-Method", "GET"))
+			.andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+		mvc.perform(options("/api/account")
+				.header("Origin", "https://portal.teaz.pro")
+				.header("Access-Control-Request-Method", "GET"))
+			.andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
+		mvc.perform(options("/api/events/today")
+				.header("Origin", "https://evil.example")
 				.header("Access-Control-Request-Method", "GET"))
 			.andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
 	}

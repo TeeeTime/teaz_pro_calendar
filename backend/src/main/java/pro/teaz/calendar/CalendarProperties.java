@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZoneId;
+import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
@@ -21,6 +22,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param refreshCooldown minimum time between two manual refreshes of one account
  * @param expandPast      recurring events are stored as occurrences from this long before today ...
  * @param expandFuture    ... to this long after today
+ * @param cors            other Teaz apps allowed to read the tile endpoint from the browser
  */
 @ConfigurationProperties("calendar")
 public record CalendarProperties(
@@ -32,5 +34,9 @@ public record CalendarProperties(
 		@DefaultValue("2m") Duration staleAfter,
 		@DefaultValue("30s") Duration refreshCooldown,
 		@DefaultValue("P2Y") Period expandPast,
-		@DefaultValue("P2Y") Period expandFuture) {
+		@DefaultValue("P2Y") Period expandFuture,
+		@DefaultValue Cors cors) {
+
+	public record Cors(@DefaultValue List<String> allowedOrigins) {
+	}
 }
