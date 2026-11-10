@@ -86,7 +86,16 @@ watch(() => props.days[0], scrollToMorning)
             <span class="week__date">{{ dayLabel(row.day, 'dayMonth') }}</span>
           </button>
 
-          <div class="week__track" :style="{ height: `${row.height}px` }">
+          <div class="week__track" :style="{ minHeight: `${row.height}px` }">
+            <div
+              v-for="hour in 23"
+              :key="`line-${hour}`"
+              class="week__line"
+              :class="{ 'week__line--major': hour % 6 === 0 }"
+              :style="{ left: percent(hour * 60) }"
+              aria-hidden="true"
+            />
+
             <button
               v-for="(event, index) in row.allDay"
               :key="`all-${event.id}`"
@@ -224,17 +233,29 @@ watch(() => props.days[0], scrollToMorning)
   color: var(--color-accent);
 }
 
-/* One vertical line per hour, a stronger one every six hours. */
 .week__track {
   position: relative;
   flex: 1;
   min-width: 0;
-  background-image:
-    linear-gradient(to right, var(--color-border) 1px, transparent 1px),
-    linear-gradient(to right, var(--color-surface-active) 1px, transparent 1px);
-  background-size:
-    calc(100% / 4) 100%,
-    calc(100% / 24) 100%;
+}
+
+/*
+ * One vertical line per hour (none at 00:00, the day column's border is there),
+ * a stronger one every six hours. Real elements rather than a repeating
+ * background: a gradient tiled at 100%/24 lands on fractional pixels and comes
+ * out as a mix of sharp and blurred lines, a box is snapped to whole pixels.
+ */
+.week__line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-surface-active);
+  pointer-events: none;
+}
+
+.week__line--major {
+  background-color: var(--color-border);
 }
 
 .week__all-day {
